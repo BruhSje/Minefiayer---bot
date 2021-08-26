@@ -1,34 +1,39 @@
-// server.js
-// where your node app starts
-
-// we've started you off with Express (https://expressjs.com/)
-// but feel free to use whatever libraries or frameworks you'd like through `package.json`.
+const Discord = require("discord.js");
+const client = new Discord.Client();
 const express = require("express");
 const app = express();
+const fs = require("fs");
+//Uptime için__________________________________________________________________
+app.get("/", (req, res) => {
+  res.send("Yakında!!!");
+});
+app.listen(process.env.PORT);
 
-// our default array of dreams
-const dreams = [
-  "Find and count some sheep",
-  "Climb a really tall mountain",
-  "Wash the dishes"
-];
+//KOMUT Algılayıcı______________________________________________________________
+client.commands = new Discord.Collection();
 
-// make all the files in 'public' available
-// https://expressjs.com/en/starter/static-files.html
-app.use(express.static("public"));
-
-// https://expressjs.com/en/starter/basic-routing.html
-app.get("/", (request, response) => {
-  response.sendFile(__dirname + "/views/index.html");
+fs.readdir("./komutlar/", (err, files) => {
+  if (err) return console.error(err);
+  files.forEach((file) => {
+    if (!file.endsWith(".js")) return;
+    let cmd = require(`./komutlar/${file}`);
+    let cmdFileName = file.split(".")[0];
+    console.log(`Komut Yükleme Çalışıyor: ${cmdFileName}`);
+    client.commands.set(cmd.help.name, cmd);
+  });
 });
 
-// send the default array of dreams to the webpage
-app.get("/dreams", (request, response) => {
-  // express helps us take JS objects and send them as JSON
-  response.json(dreams);
+//EVENTS Yükleyici_______________________________________________________________
+fs.readdir("./events/", (err, files) => {
+  if (err) return console.error(err);
+  files.forEach((file) => {
+    const event = require(`./events/${file}`);
+    let eventName = file.split(".")[0];
+    console.log(`Etkinlik Yükleme Çalışıyor: ${eventName}`);
+    client.on(eventName, event.bind(null, client));
+  });
 });
+//deneme
 
-// listen for requests :)
-const listener = app.listen(process.env.PORT, () => {
-  console.log("Your app is listening on port " + listener.address().port);
-});
+
+client.login(process.env.token);
